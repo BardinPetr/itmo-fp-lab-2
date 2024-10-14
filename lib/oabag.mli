@@ -10,6 +10,9 @@ module type BAG = sig
   val create : int -> t
   (** [create cap] creates empty multiset with capacity = [cap] *)
 
+  val of_list : elt list -> t
+  (** [of_list lst] creates multiset from list *)
+
   val add : elt -> t -> t
   (** [add elem multiset] is a new multiset with [elem] added *)
 
@@ -29,8 +32,35 @@ module type BAG = sig
   val mem : elt -> t -> bool
   (** [mem elem multiset] is if [elem] is present in the [multiset] *)
 
-  val to_seq : t -> elt Seq.t
-  (** [to_seq multiset] is representation of set as sequence with repetitions *)
+  val to_rep_seq : t -> elt Seq.t
+  (** [to_rep_seq multiset] is representation of multiset as sequence with
+      repetitions *)
+
+  val to_list : t -> (elt * int) list
+  (** [to_list multiset] is representation of multiset as list of items paired
+      with multiplicities *)
+
+  val filter : (elt * int -> bool) -> t -> t
+  (** [filter pred ms] is new multiset which is a copy of [ms], but only with
+      element that match [pred]. Iterates over distinct elements and their
+      multiplicities, when [pred] is false, whole equal group is removed*)
+
+  val map : (elt -> elt) -> t -> t
+  (** [map f ms] is new multiset accuired by applying [f] to each distinct
+      element of [ms] and replaces all its copies with return value of [f]. It
+      does not distinguish between copies of element and calls predicate once
+      for all*)
+
+  val mapc : (elt * int -> elt * int) -> t -> t
+  (** [mapc f ms] is new multiset accuired by applying [f] to each distinct
+      element of [ms] with its multiplicity, [f] should return new value and its
+      new multiplicity. It does not distinguish between copies of element and
+      calls predicate once for all*)
+
+  val fold : ('acc -> elt * int -> 'acc) -> 'acc -> t -> 'acc
+  (** [fold f init ms] is result of applying function [f] to distinct elements
+      in multiset in such that result would be [f](...([f] ([f] [init] x1 c1) x2
+      c2) ...), where c1 is multiplicity of element x1. Order is not defined *)
 end
 
 (** [Make Typ] is a functor for building BAG of specified type [Typ]*)
