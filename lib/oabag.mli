@@ -1,6 +1,7 @@
 module type HashedType = sig
   type t
-  (* val hash : t -> int *)
+
+  val hash : t -> int
 end
 
 module type BAG = sig
@@ -10,15 +11,13 @@ module type BAG = sig
   val create : int -> t
   (** [create cap] creates empty multiset with capacity = [cap] *)
 
-  val of_list : elt list -> t
-  (** [of_list lst] creates multiset from list *)
+  val to_list : t -> (elt * int) list
+  (** [to_list multiset] is representation of multiset as list of items paired
+      with multiplicities *)
 
-  val add : elt -> t -> t
-  (** [add elem multiset] is a new multiset with [elem] added *)
-
-  val remove : elt -> t -> t
-  (** [remove elem multiset] returns a new multiset with one [elem] removed if
-      present. Does not affect multiset if [elem] is not present *)
+  val to_rep_seq : t -> elt Seq.t
+  (** [to_rep_seq multiset] is representation of multiset as sequence with
+      repetitions *)
 
   val size : t -> int
   (** [size multiset] is the count of distinct elements in the [multiset] *)
@@ -26,19 +25,26 @@ module type BAG = sig
   val total : t -> int
   (** [total multiset] is the total count of all elements in the [multiset] *)
 
+  val add : elt -> t -> t
+  (** [add elem multiset] is a new multiset with [elem] added *)
+
   val count : elt -> t -> int
   (** [count elem multiset] is the count [elem] elements in the [multiset] *)
 
   val mem : elt -> t -> bool
   (** [mem elem multiset] is if [elem] is present in the [multiset] *)
 
-  val to_rep_seq : t -> elt Seq.t
-  (** [to_rep_seq multiset] is representation of multiset as sequence with
-      repetitions *)
+  val remove : elt -> t -> t
+  (** [remove elem multiset] returns a new multiset with one [elem] removed if
+      present. Does not affect multiset if [elem] is not present *)
 
-  val to_list : t -> (elt * int) list
-  (** [to_list multiset] is representation of multiset as list of items paired
-      with multiplicities *)
+  val of_list : elt list -> t
+  (** [of_list lst] creates multiset from list *)
+
+  val fold : ('acc -> elt * int -> 'acc) -> 'acc -> t -> 'acc
+  (** [fold f init ms] is result of applying function [f] to distinct elements
+      in multiset in such that result would be [f](...([f] ([f] [init] x1 c1) x2
+      c2) ...), where c1 is multiplicity of element x1. Order is not defined *)
 
   val filter : (elt * int -> bool) -> t -> t
   (** [filter pred ms] is new multiset which is a copy of [ms], but only with
@@ -56,11 +62,6 @@ module type BAG = sig
       element of [ms] with its multiplicity, [f] should return new value and its
       new multiplicity. It does not distinguish between copies of element and
       calls predicate once for all*)
-
-  val fold : ('acc -> elt * int -> 'acc) -> 'acc -> t -> 'acc
-  (** [fold f init ms] is result of applying function [f] to distinct elements
-      in multiset in such that result would be [f](...([f] ([f] [init] x1 c1) x2
-      c2) ...), where c1 is multiplicity of element x1. Order is not defined *)
 end
 
 (** [Make Typ] is a functor for building BAG of specified type [Typ]*)

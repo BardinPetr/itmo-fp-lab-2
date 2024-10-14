@@ -1,6 +1,7 @@
 module type HashedType = sig
   type t
-  (* val hash : t -> int *)
+
+  val hash : t -> int
 end
 
 module type BAG = sig
@@ -8,15 +9,15 @@ module type BAG = sig
   type t
 
   val create : int -> t
-  val of_list : elt list -> t
-  val add : elt -> t -> t
-  val remove : elt -> t -> t
-  val size : t -> int
-  val total : t -> int
-  val count : elt -> t -> int
-  val mem : elt -> t -> bool
   val to_list : t -> (elt * int) list
   val to_rep_seq : t -> elt Seq.t
+  val size : t -> int
+  val total : t -> int
+  val add : elt -> t -> t
+  val count : elt -> t -> int
+  val mem : elt -> t -> bool
+  val remove : elt -> t -> t
+  val of_list : elt list -> t
   val fold : ('acc -> elt * int -> 'acc) -> 'acc -> t -> 'acc
   val filter : (elt * int -> bool) -> t -> t
   val map : (elt -> elt) -> t -> t
@@ -24,6 +25,8 @@ module type BAG = sig
 end
 
 module Make (Typ : HashedType) = struct
+  let max_load_factor = 0.5
+
   type elt = Typ.t
 
   type 'a cell =
@@ -35,8 +38,7 @@ module Make (Typ : HashedType) = struct
 
   (* private section *)
 
-  (** [hash x cap] is hash value for [x] bound to array capacity [cap]*)
-  let hash x cap = Hashtbl.hash x mod cap
+  let hash x cap = Typ.hash x mod cap
 
   (** [probe cur step cap] is index that is probed on [step] iteration from
       [cur] position on array of capacity [cap] *)
@@ -82,12 +84,6 @@ module Make (Typ : HashedType) = struct
   let create cap =
     { capacity = cap; total = 0; size = 0; data = Array.make cap Empty }
 
-  (** [size multiset] is the count of distinct elements in the multiset *)
-  let size ms = ms.size
-
-  (** [total multiset] is the total count of all elements in the multiset *)
-  let total ms = ms.total
-
   (** [to_list multiset] is representation of multiset as list of items paired
       with multiplicities *)
   let to_list ms =
@@ -106,27 +102,42 @@ module Make (Typ : HashedType) = struct
     |> Seq.map (fun (v, c) -> Seq.repeat v |> Seq.take c)
     |> Seq.concat
 
-  (** [addm item n multiset] is a new multiset with [elem] added [n] times *)
-  let addm item n ms =
-    match find_insert_id item ms with
-    | None -> failwith "No space"
-    | Some (selected_id, cur_cnt) ->
-        {
-          data =
-            Array.mapi
-              (fun i old ->
-                if i = selected_id then Value (item, cur_cnt + n) else old)
-              ms.data;
-          size = (ms.size + if cur_cnt = 0 then 1 else 0);
-          total = ms.total + n;
-          capacity = ms.capacity;
-        }
+  (** [size multiset] is the count of distinct elements in the multiset *)
+  let size ms = ms.size
+
+  (** [total multiset] is the total count of all elements in the multiset *)
+  let total ms = ms.total
+
+  (** [load_factor multiset] is current load factor of array*)
+  let load_factor ms = float_of_int ms.size /. float_of_int ms.capacity
+
+  (** [addm item n multiset] is a new multiset with [elem] added [n] times. *)
+  let rec addm item n ms =
+    if load_factor ms > max_load_factor then
+      (* grow list and copy data *)
+      ms
+      |> to_list
+      |> List.fold_left
+           (fun acc (v, c) -> acc |> addm v c)
+           (create (ms.capacity * 2))
+      |> addm item n
+    else
+      match find_insert_id item ms with
+      | None -> failwith "No space"
+      | Some (selected_id, cur_cnt) ->
+          {
+            data =
+              Array.mapi
+                (fun i old ->
+                  if i = selected_id then Value (item, cur_cnt + n) else old)
+                ms.data;
+            size = (ms.size + if cur_cnt = 0 then 1 else 0);
+            total = ms.total + n;
+            capacity = ms.capacity;
+          }
 
   (** [add elem multiset] is a new multiset with [elem] added *)
   let add item ms = addm item 1 ms
-
-  (** [of_list lst] creates multiset from list *)
-  let of_list lst = List.fold_right add lst (create (List.length lst))
 
   (** [count elem multiset] is the count [elt] elements in the [multiset] *)
   let count item ms =
@@ -155,6 +166,9 @@ module Make (Typ : HashedType) = struct
           total = ms.total - 1;
           capacity = ms.capacity;
         }
+
+  (** [of_list lst] creates multiset from list *)
+  let of_list lst = List.fold_right add lst (create (List.length lst))
 
   (** [fold f init ms] is result of applying function [f] to distinct elements
       in multiset in such that result would be [f](...([f] ([f] [init] x1 c1) x2
@@ -192,28 +206,5 @@ module Make (Typ : HashedType) = struct
       element of [ms] and replaces all its copies with return value of [f]. It
       does not distinguish between copies of element and calls predicate once
       for all*)
-  let map f ms = ms |> mapc (fun (v, c) -> (f (v, c), c))
+  let map f ms = ms |> mapc (fun (v, c) -> (f v, c))
 end
-
-module IntBag = Make (Int)
-
-let m =
-  let open IntBag in
-  create 5
-  |> add 1
-  |> add 2
-  |> add 3
-  |> add 2
-  |> add 2
-  |> add 1
-  |> mapc (fun (v, c) -> (v * 2, c + 6))
-  |> fold (fun acc (v, c) -> (acc * 100) + (v + (c * 10))) 0
-  |> print_int
-
-(*
-   m
-   |> IntBag.to_seq
-   |> Seq.map string_of_int
-   |> List.of_seq
-   |> String.concat ", "
-   |> print_string *)
