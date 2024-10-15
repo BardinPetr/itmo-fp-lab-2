@@ -34,6 +34,9 @@ module type BAG = sig
   val merge : t -> t -> t
   (** [merge ms1 ms2] is a new multiset as a join of [ms1] and [ms2]*)
 
+  val copy : t -> t
+  (** [copy ms] is a new multiset with a data of [ms]*)
+
   val count : elt -> t -> int
   (** [count elem multiset] is the count [elem] elements in the [multiset] *)
 

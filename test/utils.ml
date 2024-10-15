@@ -7,3 +7,9 @@ let run_with_save_report package_name test_name report_file tests =
   match report_file with
   | Some path -> ignore (([ output ] |> Junit.make |> Junit.to_file) path)
   | None -> ()
+
+let list_sort_compare a b =
+  0
+  = List.compare Stdlib.compare
+      (List.sort Stdlib.compare a)
+      (List.sort Stdlib.compare b)

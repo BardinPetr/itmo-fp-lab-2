@@ -31,6 +31,11 @@ module BagTests (B : Oabag.BAG with type elt = int) = struct
       (*remove 2 times '1' '2' and '3'*)
       (m_rem |> to_list)
 
+  let test_grow () =
+    let target = demo_list 100 2 |> of_list in
+    let to_check = List.fold_right add (demo_list 100 2) (create 1) in
+    pair_list_check (target |> to_list) (to_check |> to_list)
+
   let test_join () =
     let a = demo_list 3 3 |> of_list in
     let b = demo_list 3 3 |> List.map (fun i -> i + 3) |> of_list in
@@ -94,6 +99,7 @@ module BagTests (B : Oabag.BAG with type elt = int) = struct
           test_case "Add with duplicates" `Quick test_add_dup;
           test_case "Add & Remove" `Quick test_add_rem;
           test_case "Join" `Quick test_join;
+          test_case "Growth" `Quick test_grow;
         ] );
       ( "Utils",
         [

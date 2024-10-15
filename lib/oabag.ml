@@ -16,6 +16,7 @@ module type BAG = sig
   val total : t -> int
   val add : elt -> t -> t
   val merge : t -> t -> t
+  val copy : t -> t
   val count : elt -> t -> int
   val mem : elt -> t -> bool
   val remove : elt -> t -> t
@@ -84,6 +85,7 @@ module Make (Typ : HashedType) = struct
 
   (** [create cap] creates empty multiset with capacity = [cap] *)
   let create cap =
+    let cap = max 1 cap in
     { capacity = cap; total = 0; size = 0; data = Array.make cap Empty }
 
   (** [to_list multiset] is representation of multiset as list of items paired
@@ -157,6 +159,12 @@ module Make (Typ : HashedType) = struct
     |> List.fold_left
          (fun acc (v, c) -> addm v c acc)
          (create (ms1.capacity + ms2.capacity))
+
+  (** [copy ms] is a new multiset with a data of [ms]*)
+  let copy ms =
+    ms
+    |> to_list
+    |> List.fold_left (fun acc (v, c) -> addm v c acc) (create ms.capacity)
 
   (** [count elem multiset] is the count [elt] elements in the [multiset] *)
   let count item ms =
