@@ -225,9 +225,11 @@ module Make (Typ : HashedType) = struct
       calls predicate once for all*)
   let mapc f ms =
     ms
-    |> to_list
-    |> List.map f
-    |> List.fold_left (fun acc (v, c) -> addm v c acc) (create ms.capacity)
+    |> fold
+         (fun acc (v, c) ->
+           let n_v, n_c = f (v, c) in
+           addm n_v n_c acc)
+         (create ms.capacity)
 
   (** [map f ms] is new multiset accuired by applying [f] to each distinct
       element of [ms] and replaces all its copies with return value of [f]. It
