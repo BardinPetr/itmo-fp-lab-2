@@ -17,5 +17,5 @@
  (name lab2)
  (synopsis "ITMO FP course laboratory work #2")
  (description "Implemetation of OpenAddress Hashmap Bag")
- (depends ocaml dune (alcotest :with-test) (junit_alcotest :with-test))
+ (depends ocaml dune (alcotest :with-test) (junit_alcotest :with-test) (qcheck :with-test) (qcheck-alcotest :with-test))
  (allow_empty))

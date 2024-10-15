@@ -11,9 +11,11 @@ module type BAG = sig
   val create : int -> t
   val to_list : t -> (elt * int) list
   val to_rep_seq : t -> elt Seq.t
+  val equal : t -> t -> bool
   val size : t -> int
   val total : t -> int
   val add : elt -> t -> t
+  val merge : t -> t -> t
   val count : elt -> t -> int
   val mem : elt -> t -> bool
   val remove : elt -> t -> t
@@ -102,6 +104,14 @@ module Make (Typ : HashedType) = struct
     |> Seq.map (fun (v, c) -> Seq.repeat v |> Seq.take c)
     |> Seq.concat
 
+  (** [equal ms1 ms2] is true if contents of multistes is equal*)
+  let equal a b =
+    let open List in
+    let sorted =
+      [ a; b ] |> map (fun l -> l |> to_list |> sort Stdlib.compare)
+    in
+    hd sorted = nth sorted 1
+
   (** [size multiset] is the count of distinct elements in the multiset *)
   let size ms = ms.size
 
@@ -138,6 +148,15 @@ module Make (Typ : HashedType) = struct
 
   (** [add elem multiset] is a new multiset with [elem] added *)
   let add item ms = addm item 1 ms
+
+  (** [merge ms1 ms2] is a new multiset as a join of [ms1] and [ms2]*)
+  let merge ms1 ms2 =
+    [ ms1; ms2 ]
+    |> List.map to_list
+    |> List.concat
+    |> List.fold_left
+         (fun acc (v, c) -> addm v c acc)
+         (create (ms1.capacity + ms2.capacity))
 
   (** [count elem multiset] is the count [elt] elements in the [multiset] *)
   let count item ms =

@@ -31,6 +31,13 @@ module BagTests (B : Oabag.BAG with type elt = int) = struct
       (*remove 2 times '1' '2' and '3'*)
       (m_rem |> to_list)
 
+  let test_join () =
+    let a = demo_list 3 3 |> of_list in
+    let b = demo_list 3 3 |> List.map (fun i -> i + 3) |> of_list in
+    let res = a |> merge b in
+    let valid = demo_list 6 3 |> of_list in
+    pair_list_check (valid |> to_list) (res |> to_list)
+
   let test_from_list () =
     let m = of_list [ 1; 2; 3; 3 ] |> to_list in
     pair_list_check [ (1, 1); (2, 1); (3, 2) ] m
@@ -50,6 +57,13 @@ module BagTests (B : Oabag.BAG with type elt = int) = struct
     check (list int) "Count of exitsing element" [ 1; 2; 3 ]
       ([ 11; 22; 33 ] |> List.map (fun i -> m |> count i));
     check int "Count not existing" 0 (m |> count 404)
+
+  let test_equals () =
+    let m1 = of_list [ 1; 2; 3; 4; 4 ] in
+    let m2 = of_list [ 1; 2; 4 ] |> add 3 |> add 4 in
+    let m3 = of_list [ 1; 2; 4 ] in
+    check bool "Equal() of equal sets" true (equal m1 m2);
+    check bool "Equal() of not equal sets" false (equal m1 m3)
 
   let test_fold () =
     let res =
@@ -79,6 +93,7 @@ module BagTests (B : Oabag.BAG with type elt = int) = struct
           test_case "Add" `Quick test_add;
           test_case "Add with duplicates" `Quick test_add_dup;
           test_case "Add & Remove" `Quick test_add_rem;
+          test_case "Join" `Quick test_join;
         ] );
       ( "Utils",
         [
@@ -86,6 +101,7 @@ module BagTests (B : Oabag.BAG with type elt = int) = struct
           test_case "As List" `Quick test_to_list;
           test_case "Size/Distinct" `Quick test_size;
           test_case "Count" `Quick test_count;
+          test_case "Equals" `Quick test_equals;
         ] );
       ( "Operations",
         [
@@ -103,4 +119,4 @@ module Tests = BagTests (IntBag)
 let () =
   Utils.run_with_save_report "OABag" "Open addressing hash table bag"
     (Sys.getenv_opt "REPORT_PATH")
-    Tests.tests
+    (Tests.tests @ Prop.PropTests.tests)

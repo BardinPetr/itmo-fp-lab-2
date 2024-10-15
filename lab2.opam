@@ -12,6 +12,8 @@ depends: [
   "dune" {>= "3.16"}
   "alcotest" {with-test}
   "junit_alcotest" {with-test}
+  "qcheck" {with-test}
+  "qcheck-alcotest" {with-test}
   "odoc" {with-doc}
 ]
 build: [
