@@ -1,45 +1,106 @@
-(*let report_path = Sys.getenv_opt "REPORT_PATH"
+open Alcotest
 
-  let () =
-     Utils.run_with_save_report "euler" "Euler problems solutions test" report_path
-       [] *)
+module BagTests (B : Oabag.BAG with type elt = int) = struct
+  open B
 
-(* let im = Oabag.(create 10) *)
-(* open Multiset module *)
+  let demo_list sz rep =
+    Seq.(ints 1 |> take sz |> cycle |> take (rep * sz)) |> List.of_seq
 
-(* open Alcotest *)
-(* open Oabag *)
+  let list_check = check (slist int Stdlib.compare) "Valid list"
 
-(* let test_add () =
-     let m = create 10 |> add "test" in
-     (check int) "Size after adding one element" 1 (size m);
-     (check int) "Total size after adding one element" 1 (total_size m);
-     (check int) "Count of added element" 1 (count m "test")
+  let pair_list_check =
+    check (slist (pair int int) Stdlib.compare) "Valid pair list"
 
+  let test_add () =
+    let m = create 10 |> add 1 |> add 2 |> add 3 |> add 4 |> to_list in
+    pair_list_check [ (1, 1); (2, 1); (3, 1); (4, 1) ] m
 
-   let test_add_duplicate () =
-     let m = create 10 |> add "test" |> add "test" in
-     (check int "Size after adding duplicate element" 1 (size m);
-     (check int) "Total size after adding duplicate element" 2 (total_size m);
-     (check int) "Count of added element" 2 (count m "test")
+  let test_add_dup () =
+    let test_seq = demo_list 5 4 in
+    let m = List.fold_right add test_seq (create 10) in
+    pair_list_check
+      (Seq.(ints 1 |> take 5 |> map (fun i -> (i, 4))) |> List.of_seq)
+      (m |> to_list)
 
+  let test_add_rem () =
+    let lst = demo_list 5 5 in
+    let m = of_list lst in
+    let m_rem = List.fold_right remove (demo_list 3 2) m in
+    pair_list_check
+      [ (1, 3); (2, 3); (3, 3); (4, 5); (5, 5) ]
+      (*remove 2 times '1' '2' and '3'*)
+      (m_rem |> to_list)
 
-   let () =
-     let open Alcotest in
-     run "Multiset Tests" [
-       "Basic Operations", [
-         test_case "Creation" `Quick test_create;
-         test_case "Add Element" `Quick test_add;
-         test_case "Add Duplicate Element" `Quick test_add_duplicate;
-       ]
-     ] *)
+  let test_from_list () =
+    let m = of_list [ 1; 2; 3; 3 ] |> to_list in
+    pair_list_check [ (1, 1); (2, 1); (3, 2) ] m
 
-(* open Oabag *)
+  let test_to_list () =
+    let lst = demo_list 5 5 in
+    let m = of_list lst |> to_rep_seq |> List.of_seq in
+    list_check m lst
 
-(* module type INT_BAG = Oabag with type t = int *)
+  let test_size () =
+    let m = of_list [ 1; 2; 2; 3; 3; 3 ] in
+    check int "Total size" 6 (m |> total);
+    check int "Distinct size" 3 (m |> size)
+
+  let test_count () =
+    let m = of_list [ 11; 22; 22; 33; 33; 33 ] in
+    check (list int) "Count of exitsing element" [ 1; 2; 3 ]
+      ([ 11; 22; 33 ] |> List.map (fun i -> m |> count i));
+    check int "Count not existing" 0 (m |> count 404)
+
+  let test_fold () =
+    let res =
+      demo_list 5 2 |> of_list |> fold (fun acc (v, c) -> acc + (v * c)) 1000
+    in
+    check int "Fold sum value" (1000 + (2 * (1 + 2 + 3 + 4 + 5))) res
+
+  let test_filter () =
+    let m = of_list [ 1; 2; 2; 3; 3; 3; 4; 4; 4; 4 ] in
+    let f = m |> filter (fun (v, c) -> v > 2 && c < 4) in
+    pair_list_check [ (3, 3) ] (f |> to_list)
+
+  let test_map () =
+    let m = demo_list 5 2 |> of_list |> map (fun v -> v * 10) |> to_list in
+    pair_list_check (demo_list 5 1 |> List.map (fun i -> (i * 10, 2))) m
+
+  let test_mapc () =
+    let m =
+      demo_list 5 2 |> of_list |> mapc (fun (v, _) -> (v * 2, v * 3)) |> to_list
+    in
+    pair_list_check (demo_list 5 1 |> List.map (fun i -> (i * 2, i * 3))) m
+
+  let tests =
+    [
+      ( "Add/Remove",
+        [
+          test_case "Add" `Quick test_add;
+          test_case "Add with duplicates" `Quick test_add_dup;
+          test_case "Add & Remove" `Quick test_add_rem;
+        ] );
+      ( "Utils",
+        [
+          test_case "From List" `Quick test_from_list;
+          test_case "As List" `Quick test_to_list;
+          test_case "Size/Distinct" `Quick test_size;
+          test_case "Count" `Quick test_count;
+        ] );
+      ( "Operations",
+        [
+          test_case "Fold" `Quick test_fold;
+          test_case "Filter" `Quick test_filter;
+          test_case "Map" `Quick test_map;
+          test_case "Map with new counts" `Quick test_mapc;
+        ] );
+    ]
+end
 
 module IntBag = Oabag.Make (Int)
+module Tests = BagTests (IntBag)
 
-(* let m =
-   let open IntBag in
-   create 100 |> add 31 |> add 2342 |> add 123 |> to_seq *)
+let () =
+  Utils.run_with_save_report "OABag" "Open addressing hash table bag"
+    (Sys.getenv_opt "REPORT_PATH")
+    Tests.tests
