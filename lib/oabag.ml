@@ -11,13 +11,13 @@ module type BAG = sig
   val create : int -> t
   val to_list : t -> (elt * int) list
   val to_rep_seq : t -> elt Seq.t
-  val equal : t -> t -> bool
   val size : t -> int
   val total : t -> int
   val add : elt -> t -> t
   val merge : t -> t -> t
   val copy : t -> t
   val count : elt -> t -> int
+  val equal : t -> t -> bool
   val mem : elt -> t -> bool
   val remove : elt -> t -> t
   val of_list : elt list -> t
@@ -106,14 +106,6 @@ module Make (Typ : HashedType) = struct
     |> Seq.map (fun (v, c) -> Seq.repeat v |> Seq.take c)
     |> Seq.concat
 
-  (** [equal ms1 ms2] is true if contents of multistes is equal*)
-  let equal a b =
-    let open List in
-    let sorted =
-      [ a; b ] |> map (fun l -> l |> to_list |> sort Stdlib.compare)
-    in
-    hd sorted = nth sorted 1
-
   (** [size multiset] is the count of distinct elements in the multiset *)
   let size ms = ms.size
 
@@ -170,6 +162,14 @@ module Make (Typ : HashedType) = struct
   let count item ms =
     match find_cell item ms with Some (_, count) -> count | None -> 0
 
+  (** [equal ms1 ms2] is true if contents of multistes is equal*)
+  let equal a b =
+    size a = size b
+    && a
+       |> to_list
+       |> List.map (fun (v, c) -> c = count v b)
+       |> List.fold_left ( && ) true
+
   (** [mem elem multiset] is if [elt] is present in the [multiset] *)
   let mem item ms = count item ms != 0
 
@@ -189,7 +189,7 @@ module Make (Typ : HashedType) = struct
                      | Value (x, cnt) -> Value (x, cnt - 1)
                      | _ -> failwith "invalid state"
                    else old);
-          size = (ms.size + if old_count == 1 then 1 else 0);
+          size = (ms.size - if old_count == 1 then 1 else 0);
           total = ms.total - 1;
           capacity = ms.capacity;
         }

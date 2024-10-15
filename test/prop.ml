@@ -8,7 +8,7 @@ module BagPropTests (B : Oabag.BAG with type elt = int) = struct
   let create_empty_ms () = create 1000
 
   let monoid_identity =
-    QCheck.Test.make ~count:100 ~name:"Monoid Identity element"
+    QCheck.Test.make ~count:1000 ~name:"Monoid Identity element"
       (QCheck.make gen_ms) (fun ms ->
         let l = merge ms (create_empty_ms ()) in
         let r = merge (create_empty_ms ()) ms in
@@ -17,7 +17,7 @@ module BagPropTests (B : Oabag.BAG with type elt = int) = struct
   let gen_3_ms = QCheck.Gen.triple gen_ms gen_ms gen_ms
 
   let monoid_assoc =
-    QCheck.Test.make ~count:100 ~name:"Monoid Associativity"
+    QCheck.Test.make ~count:1000 ~name:"Monoid Associativity"
       (QCheck.make gen_3_ms) (fun (a, b, c) ->
         equal (merge (merge a b) c) (merge a (merge b c)))
 
@@ -39,7 +39,7 @@ module BagPropTests (B : Oabag.BAG with type elt = int) = struct
 
   (** check that any set would not change after applying add operation to it*)
   let set_immutability =
-    QCheck.Test.make ~count:100 ~name:"Set is immutable over add operation"
+    QCheck.Test.make ~count:1000 ~name:"Set is immutable over add operation"
       (QCheck.make gen_ms_and_list) (fun (ms, to_add) ->
         let orig = copy ms in
         let _ = List.fold_right add to_add ms in

@@ -19,9 +19,6 @@ module type BAG = sig
   (** [to_rep_seq multiset] is representation of multiset as sequence with
       repetitions *)
 
-  val equal : t -> t -> bool
-  (** [equal ms1 ms2] is true if contents of multistes is equal*)
-
   val size : t -> int
   (** [size multiset] is the count of distinct elements in the [multiset] *)
 
@@ -39,6 +36,9 @@ module type BAG = sig
 
   val count : elt -> t -> int
   (** [count elem multiset] is the count [elem] elements in the [multiset] *)
+
+  val equal : t -> t -> bool
+  (** [equal ms1 ms2] is true if contents of multistes is equal*)
 
   val mem : elt -> t -> bool
   (** [mem elem multiset] is if [elem] is present in the [multiset] *)
