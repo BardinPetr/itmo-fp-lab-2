@@ -20,7 +20,7 @@ module type BAG = sig
       repetitions *)
 
   val equal : t -> t -> bool
-(** [equal ms1 ms2] is true if contents of multistes is equal*)
+  (** [equal ms1 ms2] is true if contents of multistes is equal*)
 
   val size : t -> int
   (** [size multiset] is the count of distinct elements in the [multiset] *)

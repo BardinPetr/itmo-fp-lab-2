@@ -114,9 +114,4 @@ module BagTests (B : Oabag.BAG with type elt = int) = struct
 end
 
 module IntBag = Oabag.Make (Int)
-module Tests = BagTests (IntBag)
-
-let () =
-  Utils.run_with_save_report "OABag" "Open addressing hash table bag"
-    (Sys.getenv_opt "REPORT_PATH")
-    (Tests.tests @ Prop.PropTests.tests)
+module UnitTests = BagTests (IntBag)
