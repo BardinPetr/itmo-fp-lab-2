@@ -12,7 +12,9 @@ module type BAG = sig
   val to_list : t -> (elt * int) list
   val to_rep_seq : t -> elt Seq.t
   val size : t -> int
+  val cap : t -> int
   val total : t -> int
+  val addm : elt -> int -> t -> t
   val add : elt -> t -> t
   val merge : t -> t -> t
   val copy : t -> t
@@ -108,6 +110,9 @@ module Make (Typ : HashedType) = struct
 
   (** [size multiset] is the count of distinct elements in the multiset *)
   let size ms = ms.size
+
+  (** [cap multiset] is the capacity of multiset *)
+  let cap ms = ms.size
 
   (** [total multiset] is the total count of all elements in the multiset *)
   let total ms = ms.total
@@ -236,4 +241,28 @@ module Make (Typ : HashedType) = struct
       does not distinguish between copies of element and calls predicate once
       for all*)
   let map f ms = ms |> mapc (fun (v, c) -> (f v, c))
+end
+
+module type Mapper = sig
+  type src
+  type src_elt
+  type dst
+  type dst_elt
+
+  val map : (src_elt * int -> dst_elt * int) -> src -> dst
+end
+
+module MakeMapper (T1 : BAG) (T2 : BAG) = struct
+  type src = T1.t
+  type src_elt = T1.elt
+  type dst = T2.t
+  type dst_elt = T2.elt
+
+  let map (f : src_elt * int -> dst_elt * int) (ms : src) : dst =
+    T1.fold
+      (fun acc (v, c) ->
+        let n_v, n_c = f (v, c) in
+        T2.addm n_v n_c acc)
+      (T2.create (T1.cap ms))
+      ms
 end

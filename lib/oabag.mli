@@ -22,8 +22,14 @@ module type BAG = sig
   val size : t -> int
   (** [size multiset] is the count of distinct elements in the [multiset] *)
 
+  val cap : t -> int
+  (** [cap multiset] is the current capacity *)
+
   val total : t -> int
   (** [total multiset] is the total count of all elements in the [multiset] *)
+
+  val addm : elt -> int -> t -> t
+  (** [addm item n multiset] is a new multiset with [elem] added [n] times. *)
 
   val add : elt -> t -> t
   (** [add elem multiset] is a new multiset with [elem] added *)
@@ -75,3 +81,19 @@ end
 
 (** [Make Typ] is a functor for building BAG of specified type [Typ]*)
 module Make (Typ : HashedType) : BAG with type elt = Typ.t
+
+module type Mapper = sig
+  type src
+  type src_elt
+  type dst
+  type dst_elt
+
+  val map : (src_elt * int -> dst_elt * int) -> src -> dst
+end
+
+module MakeMapper (T1 : BAG) (T2 : BAG) :
+  Mapper
+    with type src = T1.t
+     and type src_elt = T1.elt
+     and type dst = T2.t
+     and type dst_elt = T2.elt
